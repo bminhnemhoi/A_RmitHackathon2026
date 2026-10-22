@@ -11,3 +11,5 @@ blend4b,2026-10-22T12:40,claude,local,mms .30 + xlmrl_ep5 .25 + wolf_ep3 .20 + w
 mmbert_base_lr3e-5_ep3,2026-10-22T12:48,claude,modal-A10G,mmbert-base,384,3e-5,3,32,ce_cw0.5,42,skf5_label_lang_s42,0.9673,0.9773,0.9604,0.9640,0.9556,0.9786,0.9801,0.9654,,18,best single so far
 blend5_equal,2026-10-22T12:48,claude,local,equal mean of mms+xlmrl_ep5+wolf_ep3+wolf_ep4+mmbert_base,,,,,,42,skf5_label_lang_s42,0.9751,,,,,,,,,0,equal weights beat nested fitted weights (0.9743) -> use equal
 wolf_len768_s43_ep4,2026-10-22T12:48,claude,modal-L40S,wolf-defender-prompt-injection,768,2e-5,4,16,ce_cw0.5,43,skf5_label_lang_s42,0.9670,0.9775,0.9621,0.9614,0.9590,0.9767,0.9766,0.9594,,10,longer context: no gain vs len384; adding to blend5 -> 0.9748 (worse) -> not used
+mmbert_small_len768_ep3,2026-10-22T12:54,claude,modal-A10G,mmbert-small,768,5e-5,3,32,ce_cw0.5,44,skf5_label_lang_s42,0.9604,0.9725,0.9523,0.9564,0.9497,0.9728,0.9705,0.9573,,13,+0.002 vs len384/2ep
+blend6_equal,2026-10-22T12:54,claude,local,equal mean of 6 runs (blend5 + mms768),,,,,,42,skf5_label_lang_s42,0.9758,,,,,,,,,0,best OOF; equal weights
