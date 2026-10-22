@@ -1,1 +1,2 @@
 run_id,created_at,owner,kaggle_notebook_version,model,max_len,lr,epochs,batch_size,loss,seed,split_id,val_macro_f1,f1_benign,f1_jailbreak,f1_prompt_injection,f1_pt,f1_fr,f1_it,f1_en,public_lb,runtime_min,notes
+mmbert_small_s1,2026-10-22T12:16,claude,modal-A10G,mmbert-small,384,5e-5,2,32,ce_cw0.5,42,skf5_label_lang_s42,0.9583,0.9692,0.9448,0.9610,0.9421,0.9757,0.9713,0.9598,,15,5-fold OOF; class multipliers +0.0005 only; best epoch=last
