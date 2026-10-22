@@ -1,0 +1,38 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+kaggle.json
+
+# Competition data (CC BY-NC-SA, Kaggle rules: do not redistribute)
+data/
+*.csv
+!experiments/*.csv
+!tests/fixtures/*.csv
+
+# Model artifacts / large outputs
+models/
+outputs/
+checkpoints/
+*.npy
+*.npz
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+*.log
+wandb/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

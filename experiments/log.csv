@@ -1,0 +1,1 @@
+run_id,created_at,owner,kaggle_notebook_version,model,max_len,lr,epochs,batch_size,loss,seed,split_id,val_macro_f1,f1_benign,f1_jailbreak,f1_prompt_injection,f1_pt,f1_fr,f1_it,f1_en,public_lb,runtime_min,notes
