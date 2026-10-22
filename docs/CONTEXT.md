@@ -41,7 +41,11 @@ Languages: Portuguese (`pt`), French (`fr`), Italian (`it`), English (`en`) — 
 - `id` like `t000006`. `text` length 10–18,550 chars, mean 294.
 - Class balance (train): BENIGN 62%, JAILBREAK 31%, PROMPT_INJECTION 7%.
 - Data licence: **CC BY-NC-SA 4.0** → never commit the data to GitHub.
-- Kaggle input path is typically `/kaggle/input/rmit-hackathon-2026/` (verify in the notebook with `!ls /kaggle/input`).
+- Kaggle input paths, taken from the organiser's demo notebook `aisuko/rmit-sgs-demo-c1` (last run 19/10/2026, 2× T4, Internet on):
+  - data: `/kaggle/input/competitions/rmit-hackathon-2026/`
+  - models: `/kaggle/input/models/aisuko/<slug>/transformers/default/1/` (e.g. `xlm-roberta-base`)
+- That demo is only a skeleton: XLM-R-base, `MAXLEN=256, EPOCHS=1, LR=2e-5`, 16 per GPU, **only the first 200 train rows**,
+  90/10 split stratified by label, HF `Trainer` + `DataCollatorWithPadding`. It has no training, prediction or submission cells.
 
 ## 4. Metric
 
