@@ -1,0 +1,238 @@
+zip: ['sample_submission.csv', 'test.csv', 'train.csv']
+train (14000, 4) test (6000, 3) nulls {'id': 0, 'text': 0, 'language': 0, 'label': 0} {'id': 0, 'text': 0, 'language': 0}
+
+## label x language counts
+ | label            |   en |   fr |   it |   pt |   total |
+|:-----------------|-----:|-----:|-----:|-----:|--------:|
+| BENIGN           |  868 | 2170 | 1736 | 3906 |    8680 |
+| JAILBREAK        |  434 | 1085 |  868 | 1953 |    4340 |
+| PROMPT_INJECTION |   98 |  245 |  196 |  441 |     980 |
+
+## column total
+ {'en': 1400, 'fr': 3500, 'it': 2800, 'pt': 6300} grand 14000
+
+## label share within language
+ | label            |   en |   fr |   it |   pt |
+|:-----------------|-----:|-----:|-----:|-----:|
+| BENIGN           | 0.62 | 0.62 | 0.62 | 0.62 |
+| JAILBREAK        | 0.31 | 0.31 | 0.31 | 0.31 |
+| PROMPT_INJECTION | 0.07 | 0.07 | 0.07 | 0.07 |
+
+## label share overall
+ {'BENIGN': 0.62, 'JAILBREAK': 0.31, 'PROMPT_INJECTION': 0.07} {'BENIGN': 8680, 'JAILBREAK': 4340, 'PROMPT_INJECTION': 980}
+
+## language train vs test
+ | language   |   train |   test |   train_% |   test_% |
+|:-----------|--------:|-------:|----------:|---------:|
+| en         |    1400 |    600 |        10 |       10 |
+| fr         |    3500 |   1500 |        25 |       25 |
+| it         |    2800 |   1200 |        20 |       20 |
+| pt         |    6300 |   2700 |        45 |       45 |
+
+## length by label (chars)
+ | label            |   count |   mean |   std |   min |   5% |   25% |   50% |   75% |    95% |   max |
+|:-----------------|--------:|-------:|------:|------:|-----:|------:|------:|------:|-------:|------:|
+| BENIGN           |    8680 |  454.8 | 777.6 |    10 |   26 |    62 |   115 |   680 | 1582   | 18550 |
+| JAILBREAK        |    4340 |  657.9 | 432.3 |   112 |  206 |   329 |   565 |   844 | 1517.1 |  3752 |
+| PROMPT_INJECTION |     980 |  308.7 | 600.2 |    15 |   44 |    66 |    99 |   263 | 1429.8 |  5128 |
+
+## length by label (words)
+ | label            |   count |   mean |   std |   min |   5% |   25% |   50% |   75% |   95% |   max |
+|:-----------------|--------:|-------:|------:|------:|-----:|------:|------:|------:|------:|------:|
+| BENIGN           |    8680 |   71.2 | 121.1 |     1 |    5 |    11 |    18 |   104 |   246 |  2643 |
+| JAILBREAK        |    4340 |  100.5 |  66.4 |    15 |   31 |    50 |    86 |   129 |   232 |   587 |
+| PROMPT_INJECTION |     980 |   49.2 |  94.4 |     3 |    7 |    11 |    16 |    44 |   214 |   793 |
+
+## median chars label x lang
+ | label            |    en |   fr |    it |   pt |
+|:-----------------|------:|-----:|------:|-----:|
+| BENIGN           |  74.5 |   99 |  91.5 |  143 |
+| JAILBREAK        | 328.5 |  380 | 360   |  879 |
+| PROMPT_INJECTION | 304.5 |   85 |  80.5 |  107 |
+
+## median words label x lang
+ | label            |   en |   fr |   it |   pt |
+|:-----------------|-----:|-----:|-----:|-----:|
+| BENIGN           |   14 |   17 |   15 |   22 |
+| JAILBREAK        |   52 |   58 |   53 |  134 |
+| PROMPT_INJECTION |   48 |   14 |   12 |   19 |
+
+## length train vs test
+ |       |   train |    test |
+|:------|--------:|--------:|
+| count | 14000   |  6000   |
+| mean  |   507.5 |   494.6 |
+| std   |   685.2 |   696.7 |
+| min   |    10   |    10   |
+| 25%   |    80   |    79   |
+| 50%   |   294   |   283   |
+| 75%   |   735   |   712   |
+| max   | 18550   | 17840   |
+
+## KS train vs test
+ | lang   | feature   |   n_train |   n_test |   KS_D |     p |
+|:-------|:----------|----------:|---------:|-------:|------:|
+| all    | n_char    |     14000 |     6000 | 0.0185 | 0.112 |
+| all    | n_word    |     14000 |     6000 | 0.0161 | 0.223 |
+| en     | n_char    |      1400 |      600 | 0.034  | 0.702 |
+| en     | n_word    |      1400 |      600 | 0.0305 | 0.819 |
+| fr     | n_char    |      3500 |     1500 | 0.0264 | 0.451 |
+| fr     | n_word    |      3500 |     1500 | 0.0254 | 0.498 |
+| it     | n_char    |      2800 |     1200 | 0.0261 | 0.609 |
+| it     | n_word    |      2800 |     1200 | 0.0181 | 0.942 |
+| pt     | n_char    |      6300 |     2700 | 0.026  | 0.152 |
+| pt     | n_word    |      6300 |     2700 | 0.0246 | 0.202 |
+
+## duplicates
+train dup texts: 0 test dup texts: 0
+train texts with conflicting labels: 0
+test texts exactly in train: 0
+test normalised-in-train: 5 train normalised dup: 8
+ids sample train ['t001974', 't012171', 't007179'] test ['t000006', 't000007', 't000008']
+
+## log-odds z: en BENIGN vs rest (term, z, cnt_label, cnt_rest)
+ write(10.5,352/13); will(10.4,388/57); do(10.2,363/49); prompt(8.6,355/77); be(7.2,419/129); what(7.2,236/48); you will(7.2,160/8); want(7.0,228/47); the(6.8,2543/1298); all(6.7,235/54); 2(6.7,148/17); have(6.7,212/45); text(6.6,133/7); description(6.4,127/7); use(6.4,237/60)
+
+## log-odds z: en JAILBREAK vs rest (term, z, cnt_label, cnt_rest)
+ could(14.7,223/72); could you(11.8,142/17); a(11.6,1098/1678); i m(11.6,153/64); m(11.4,153/70); while(10.6,129/55); model(9.8,94/16); how(9.2,179/155); on how(8.6,73/11); guide(8.4,70/18); help me(8.3,82/37); how to(8.3,81/36); you provide(8.2,66/15); in a(7.8,121/99); safety(7.6,56/10)
+
+## log-odds z: en PROMPT_INJECTION vs rest (term, z, cnt_label, cnt_rest)
+ users(14.5,83/19); or(12.5,156/451); financial(11.7,55/12); advice(11.2,45/23); health(10.3,38/16); you are(9.8,60/114); you must(9.0,30/21); mode(8.6,27/11); medical(8.5,26/10); my(8.3,95/334); user(8.2,50/112); never(8.2,29/31); personal(8.2,34/50); can you(7.9,46/103); dan(7.6,29/41)
+
+## log-odds z: fr BENIGN vs rest (term, z, cnt_label, cnt_rest)
+ le(12.4,3485/1090); mots(11.8,672/80); article(11.4,534/24); pas(11.4,1164/253); cible(11.4,598/14); contenu(11.2,509/34); doit(10.9,504/41); est(10.7,1477/384); ne(9.8,924/208); utilisez(9.1,360/11); rédigez(9.1,334/17); texte(9.0,329/17); chaque(8.9,416/57); titre(8.7,399/6); 1(8.7,421/62)
+
+## log-odds z: fr JAILBREAK vs rest (term, z, cnt_label, cnt_rest)
+ pourriez(18.6,380/38); tout en(17.1,300/42); pourriez vous(17.1,365/24); modèle(14.9,227/63); m(14.5,346/234); aider(14.5,254/116); aider à(14.2,202/50); vous m(14.1,198/40); tout(14.0,371/286); sécurité(13.9,229/18); m aider(13.5,183/46); sur la(12.9,240/140); pouvez vous(12.4,166/57); fournir(12.2,196/102); guide(11.3,129/32)
+
+## log-odds z: fr PROMPT_INJECTION vs rest (term, z, cnt_label, cnt_rest)
+ tes(16.1,42/19); mes(11.9,43/237); ou en(11.5,20/21); oubliez(11.4,28/95); ta(10.3,16/19); john(10.0,15/11); directives(9.7,17/39); alice(9.6,15/7); commande(9.4,15/29); dites(9.0,18/63); trump(9.0,20/3); formation(8.9,12/13); déteste(8.8,12/7); toutes les(8.8,31/229); à mes(8.7,12/19)
+
+## log-odds z: it BENIGN vs rest (term, z, cnt_label, cnt_rest)
+ articolo(10.0,421/18); chiave(10.0,461/11); lingua(10.0,664/4); parole(9.9,521/66); scrivi(8.9,373/8); voglio(8.3,373/49); destinazione(8.1,564/1); non(8.1,1132/314); di destinazione(8.0,553/1); prompt(7.9,600/130); parola(7.8,251/14); 3(7.7,251/10); voglio che(7.6,270/27); testo(7.6,241/15); cosa(7.6,280/31)
+
+## log-odds z: it JAILBREAK vs rest (term, z, cnt_label, cnt_rest)
+ potresti(17.0,302/33); su come(13.1,166/38); in cui(12.6,176/75); modello(12.3,152/46); sicurezza(12.3,166/15); aiutarmi(11.6,133/37); una(11.5,772/1092); guida(11.2,141/61); sto(10.5,125/55); aiutarmi a(10.5,107/29); dettagliata(9.9,96/27); cui(9.7,208/189); a(9.7,795/1243); fornirmi(9.6,98/10); un(9.6,1355/2382)
+
+## log-odds z: it PROMPT_INJECTION vs rest (term, z, cnt_label, cnt_rest)
+ modalità(11.8,28/65); dan(11.4,29/85); mie(10.9,27/82); le tue(10.6,24/63); dimentica(10.4,18/11); tuoi(10.0,23/70); tue(9.9,27/108); formazione(9.7,16/8); chatgpt(9.4,24/94); con la(8.6,19/70); ignora(8.5,14/30); i tuoi(8.3,16/50); tutto(8.2,26/156); alice(8.2,11/8); standard(8.2,12/21)
+
+## log-odds z: pt BENIGN vs rest (term, z, cnt_label, cnt_rest)
+ posso(17.7,601/129); você pode(16.5,874/381); quais(16.2,462/52); pode(16.2,1368/799); como(15.1,3847/3219); por que(14.5,378/63); direitos(13.0,314/61); jogo(12.9,536/235); qual(12.3,306/76); estratégias(11.9,294/77); qual é(10.8,226/14); você poderia(10.5,526/293); como posso(10.4,405/5); pode fornecer(10.3,189/20); meu(10.3,439/227)
+
+## log-odds z: pt JAILBREAK vs rest (term, z, cnt_label, cnt_rest)
+ aqui está(10.1,439/186); comece(10.0,642/338); aqui(9.2,695/401); de saúde(9.1,228/66); modelo(9.1,464/230); éticas(8.4,381/185); que(8.4,8102/7302); prejudicial(8.1,212/72); saúde(7.9,365/183); bot(7.7,252/107); gostaria que(7.5,197/73); linguagem(7.5,410/228); pedido(7.4,258/116); o bot(7.4,110/12); que você(7.3,1551/1207)
+
+## log-odds z: pt PROMPT_INJECTION vs rest (term, z, cnt_label, cnt_rest)
+ usuário(29.3,199/142); frase(27.0,174/163); diga(23.4,135/51); a frase(23.2,129/57); acima(22.9,145/36); pergunta(22.9,122/67); do usuário(20.4,100/44); entrada(20.3,103/36); i(20.3,148/19); responda(19.3,112/22); feedback(18.7,87/31); espanhol(18.3,79/40); texto(18.2,78/62); instruções(17.9,98/185); a seguir(16.7,65/50)
+
+## pt JAILBREAK vs pt BENIGN, top JAILBREAK
+ aqui está(9.2,439/180); escreva(8.6,253/75); bot(8.5,252/76); comece(8.5,642/335); de saúde(8.3,228/66); crie(7.9,207/60); modelo(7.9,464/226); aqui(7.8,695/391); éticas(7.5,381/178); roteiro(7.4,228/80); prejudicial(7.3,212/72); o bot(7.0,110/12); diálogo(7.0,191/64); sistema(6.9,276/120); acesso(6.9,149/41); pedido(6.8,258/110); saúde(6.7,365/183); gostaria que(6.7,197/72); respondendo com(6.6,115/24); empresa(6.6,170/57)
+
+## pt JAILBREAK vs pt BENIGN, top BENIGN
+ posso(-16.8,601/126); quais(-15.4,462/45); você pode(-15.3,874/366); pode(-14.7,1368/764); por que(-14.0,378/36); como(-13.4,3847/3015); qual(-12.4,306/50); direitos(-12.3,314/61); jogo(-11.6,536/233); estratégias(-11.1,294/77); pode fornecer(-9.9,189/20); como posso(-9.7,405/4); meu(-9.4,439/218); direitos autorais(-9.3,173/28); autorais(-9.3,173/28); é a(-9.2,199/51); você poderia(-9.2,526/292); fornecer(-8.9,566/331); explicar(-8.6,145/20); quais são(-8.6,219/5)
+
+## top openings (first 6 words) BENIGN (n=8680)
+     66 | veuillez ignorer toutes les instructions précédentes.
+     58 | si prega di ignorare tutte le
+     30 | qual é a melhor maneira de
+     25 | i want you to act as
+     22 | imagine que você é um historiador
+     18 | voglio che tu agisca come un
+     16 | imagine que você é um renomado
+     14 | please ignore all previous instructions. i
+## top closings (last 6 words) BENIGN
+      7 | résumer est le suivant : [invite]
+      6 | testo da riassumere è questo: [richiesta]
+      5 | sesuai per l'intestazione del tag. [richiesta]
+      5 | pour l'en-tête de la balise. [rapide]
+      5 | o direito à liberdade de expressão?
+      5 | text to summarize is this: [prompt]
+      4 | no meu caminho para o sucesso?
+      4 | suivante en [language cible] : [prompt]
+## top first-word BENIGN: {'como': 866, 'você': 682, 'imagine': 483, 'je': 320, 'quais': 319, 'qual': 234, 'por': 220, 'em': 193, 'i': 130, 'no': 128}
+## top first-3-words BENIGN: {'imagine que você': 344, 'você é um': 191, 'você pode fornecer': 126, 'qual é a': 120, 'voglio che tu': 79, 'em um mundo': 72, 'qual é o': 71, 'você pode me': 69, 'veuillez ignorer toutes': 69, 'si prega di': 68}
+
+## top openings (first 6 words) JAILBREAK (n=4340)
+     50 | bien sûr, je comprends la tâche.
+     24 | certo, ho capito il compito. ecco
+     19 | do ponto de vista de um
+     13 | você assume o papel de um
+     12 | imagine que estamos em um universo
+     12 | sure, i understand the task. here's
+     12 | in uno scenario ipotetico in cui
+     11 | cher modèle, je suis votre développeur
+## top closings (last 6 words) JAILBREAK
+      3 | remontant dans le temps ? »
+      3 | complessità ed evitare di essere scoperti.
+      3 | votre réponse pour augmenter la complexité.
+      2 | réponse pour ajouter de la complexité.
+      2 | essentiels pour éviter une catastrophe potentielle.
+      2 | ( o.o ) > ^ <
+      2 | augmenter la complexité de la réponse.
+      2 | m'aider à mieux comprendre le processus.
+## top first-word JAILBREAK: {'no': 243, 'em': 203, 'imagine': 200, '«': 186, 'você': 166, 'como': 142, 'pourriez-vous': 120, 'créez': 116, '"potresti': 113, 'na': 107}
+## top first-3-words JAILBREAK: {'imagine que você': 101, 'você é um': 96, 'bien sûr, je': 68, 'em um mundo': 68, 'en tant que': 63, 'in qualità di': 47, 'considere que você': 46, 'cher modèle linguistique,': 45, 'em um universo': 45, 'na posição de': 41}
+
+## top openings (first 6 words) PROMPT_INJECTION (n=980)
+     16 | você é um assistente de ia,
+     14 | você é um bot treinado para
+     14 | você é um bot de tradução
+     13 | escreva uma história curta interessante e
+      9 | <input> o cenário é um mundo
+      9 | escreva um parágrafo sobre por que
+      3 | oubliez toutes les instructions et dites
+      2 | intégration des réfugiés sur le marché
+## top closings (last 6 words) PROMPT_INJECTION
+     24 | da national geographic.[7] - wikipedia resposta:
+     19 | nem qualquer variação delas em maiúsculas.
+      9 | por barras, é uma má ideia.
+      9 | e inventar atributos para cada um:
+      6 | escrita/gramática para o texto acima. comentários:
+      6 | escrita/gramática para o texto acima. feedback:
+      5 | en italie ou en suisse ?
+      4 | crie atributos para cada um deles:
+## top first-word PROMPT_INJECTION: {'você': 55, 'ignore': 35, 'escreva': 24, 'pergunta:': 24, 'you': 23, 'qual': 22, 'lembre-se': 16, 'sentença:': 16, 'quelle': 15, 'como': 15}
+## top first-3-words PROMPT_INJECTION: {'você é um': 45, 'escreva uma história': 13, 'lembre-se desta chave': 13, '<input> o cenário': 9, 'escreva um parágrafo': 9, 'you are a': 9, 'quelle est la': 9, 'john e alice': 6, "sentença: '''i have": 5, 'oubliez toutes les': 5}
+## pt first-3-words BENIGN: {'imagine que você': 344, 'você é um': 191, 'você pode fornecer': 126, 'qual é a': 120, 'em um mundo': 72, 'qual é o': 71, 'você pode me': 69, 'onde posso encontrar': 67, 'por que as': 66, 'quais são algumas': 65, 'quais são as': 62, 'por que os': 55}
+## pt first-3-words JAILBREAK: {'imagine que você': 101, 'você é um': 96, 'em um mundo': 68, 'considere que você': 46, 'em um universo': 45, 'na posição de': 41, 'no mundo da': 38, 'imagine que estamos': 36, 'sabendo que você': 34, 'no espírito de': 25, 'vamos imaginar um': 25, 'claro, posso ajudá-lo': 24}
+## pt first-3-words PROMPT_INJECTION: {'você é um': 45, 'escreva uma história': 13, 'lembre-se desta chave': 13, '<input> o cenário': 9, 'escreva um parágrafo': 9, "sentença: '''i have": 5, 'qual foi o': 4, 'qual é a': 4, 'ignore todas as': 3, 'lembre-se dessa chave': 3, 'esqueça tudo antes': 3, 'john e alice': 3}
+
+## structural features by label (% rows)
+ |                   |   BENIGN |   JAILBREAK |   PROMPT_INJECTION |
+|:------------------|---------:|------------:|-------------------:|
+| has_newline       |   0      |      0      |             0      |
+| has_quote         |  16.7    |     45      |            18.7    |
+| has_bracket       |  15.9    |      3.6    |             8.9    |
+| has_code          |   0.6    |      0.8    |             1.4    |
+| has_url           |   2.2    |      0.1    |             0      |
+| has_digit         |  18.4    |     20.6    |            11.8    |
+| has_question_mark |  58.8    |     44.5    |            40.5    |
+| roleplay_cue      |  18.4    |     34.3    |             7.3    |
+| sure_here_cue     |   0.8    |      2.5    |             0.1    |
+| ignore_prev_cue   |   3.4    |      3.5    |            12.2    |
+| upper_ratio_mean  |   0.042  |      0.0157 |             0.049  |
+| digit_ratio_mean  |   0.0022 |      0.0018 |             0.0025 |
+
+## structural features by language x label (% rows)
+ |                            |   has_newline |   has_quote |   has_bracket |   has_code |   has_url |   has_digit |   has_question_mark |   roleplay_cue |   sure_here_cue |   ignore_prev_cue |
+|:---------------------------|--------------:|------------:|--------------:|-----------:|----------:|------------:|--------------------:|---------------:|----------------:|------------------:|
+| ('en', 'BENIGN')           |             0 |        14.9 |          24.2 |        0.9 |       2.8 |        23.7 |                39.9 |           15.4 |             0   |               3.5 |
+| ('en', 'JAILBREAK')        |             0 |        50   |           3.7 |        0.5 |       0   |        21.4 |                56.7 |           24.9 |             0   |               2.5 |
+| ('en', 'PROMPT_INJECTION') |             0 |         7.1 |           7.1 |        0   |       0   |        10.2 |                72.4 |           24.5 |             0   |              17.3 |
+| ('fr', 'BENIGN')           |             0 |        17.8 |          29.8 |        0.9 |       4.8 |        24.2 |                40.7 |            8.2 |             0   |               6.7 |
+| ('fr', 'JAILBREAK')        |             0 |        34.9 |           3.1 |        1.5 |       0   |        18.8 |                54.6 |           16.2 |             0.1 |               4.1 |
+| ('fr', 'PROMPT_INJECTION') |             0 |        14.3 |           1.2 |        0   |       0   |         7.3 |                44.5 |            5.7 |             0   |              15.5 |
+| ('it', 'BENIGN')           |             0 |        16.5 |          27.8 |        1.2 |       3.5 |        24.9 |                41.6 |            3.5 |             0.1 |               2.6 |
+| ('it', 'JAILBREAK')        |             0 |        48.3 |           3.5 |        0.9 |       0   |        16.1 |                57.9 |           10.1 |             0   |               1   |
+| ('it', 'PROMPT_INJECTION') |             0 |        12.8 |           1.5 |        0   |       0   |         6.6 |                38.8 |            6.6 |             0   |              13.3 |
+| ('pt', 'BENIGN')           |             0 |        16.6 |           1   |        0.2 |       0.1 |        11.2 |                80.7 |           31.3 |             1.7 |               1.8 |
+| ('pt', 'JAILBREAK')        |             0 |        48.1 |           3.9 |        0.5 |       0.2 |        23.5 |                30.3 |           57.1 |             5.6 |               4.5 |
+| ('pt', 'PROMPT_INJECTION') |             0 |        26.3 |          16.8 |        3.2 |       0   |        17   |                32   |            4.8 |             0.2 |               8.8 |
+
+## structural features test (% rows)
+ {'has_newline': 0.0, 'has_quote': 25.6, 'has_bracket': 11.8, 'has_code': 0.7, 'has_url': 1.2, 'has_digit': 17.9, 'has_question_mark': 53.4, 'roleplay_cue': 22.1, 'sure_here_cue': 1.2, 'ignore_prev_cue': 4.4} train overall {'has_newline': 0.0, 'has_quote': 25.6, 'has_bracket': 11.6, 'has_code': 0.8, 'has_url': 1.4, 'has_digit': 18.7, 'has_question_mark': 53.1, 'roleplay_cue': 22.5, 'sure_here_cue': 1.3, 'ignore_prev_cue': 4.0}
+
+## adversarial validation AUC (train vs test, SVD100 char tfidf, 5-fold): [0.4765, 0.4817, 0.4758, 0.4879, 0.4831] mean 0.481
+## kNN(5) label agreement by label (train sample): {'BENIGN': 0.832, 'JAILBREAK': 0.803, 'PROMPT_INJECTION': 0.596}
+## kNN(5) label agreement pt by label: {'BENIGN': 0.738, 'JAILBREAK': 0.706, 'PROMPT_INJECTION': 0.734}
