@@ -170,11 +170,24 @@ def train_fold(cfg: dict, fold: int) -> dict:
         tr_seqs = tr_seqs + [te_ids[i] for i in keep]
         tr_labels = np.concatenate([tr_labels, pp[keep].argmax(1)])
         n_pseudo = len(keep)
+    # per-sample weights: up-weight the hard slice (long Portuguese BENIGN/JAILBREAK prompts)
+    tr_w = np.ones(len(tr_seqs), dtype=np.float32)
+    if cfg.get("hard_weight", 1.0) != 1.0:
+        lens = np.array([len(texts[i]) for i in tr_idx])
+        hard = (np.array([langs[i] for i in tr_idx]) == "pt") & (lens > 400) & (y[tr_idx] < 2)
+        tr_w[:len(tr_idx)][hard] = cfg["hard_weight"]
+    tr_w_t = torch.tensor(tr_w, device=dev)
     freq = np.bincount(tr_labels, minlength=3) / len(tr_labels)
     cw = (1.0 / freq) ** cfg["class_weight_power"]
     cw = cw / cw.mean()
-    loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(cw, dtype=torch.float, device=dev),
-                                        label_smoothing=cfg.get("label_smoothing", 0.0))
+    ce = torch.nn.CrossEntropyLoss(weight=torch.tensor(cw, dtype=torch.float, device=dev),
+                                   label_smoothing=cfg.get("label_smoothing", 0.0), reduction="none")
+    cw_t = torch.tensor(cw, dtype=torch.float, device=dev)
+
+    def loss_fn(logits, target, idx=None):
+        per = ce(logits, target)
+        sw = tr_w_t[idx] if idx is not None else torch.ones_like(per)
+        return (per * sw).sum() / (cw_t[target] * sw).sum()  # weighted mean, same scale as the default CE
     train_loader = loader(tr_seqs, tr_labels, shuffle=True)
     steps = math.ceil(len(train_loader) / cfg["grad_accum"]) * cfg["epochs"]
 
@@ -206,11 +219,11 @@ def train_fold(cfg: dict, fold: int) -> dict:
     for ep in range(cfg["epochs"]):
         model.train()
         t0, run_loss = time.time(), 0.0
-        for step, (_, x, a, yy) in enumerate(train_loader):
-            x, a, yy = x.to(dev), a.to(dev), yy.to(dev)
+        for step, (bidx, x, a, yy) in enumerate(train_loader):
+            x, a, yy, bidx = x.to(dev), a.to(dev), yy.to(dev), bidx.to(dev)
             with torch.autocast("cuda", dtype=amp_dtype):
                 logits = model(input_ids=x, attention_mask=a).logits
-            loss = loss_fn(logits.float(), yy) / cfg["grad_accum"]
+            loss = loss_fn(logits.float(), yy, bidx) / cfg["grad_accum"]
             scaler.scale(loss).backward()
             if cfg.get("fgm") and emb.grad is not None:  # FGM: perturb only the embedding rows used in this batch
                 rows = torch.unique(x)
@@ -221,7 +234,7 @@ def train_fold(cfg: dict, fold: int) -> dict:
                     emb.data[rows] += delta
                     with torch.autocast("cuda", dtype=amp_dtype):
                         adv_logits = model(input_ids=x, attention_mask=a).logits
-                    scaler.scale(loss_fn(adv_logits.float(), yy) / cfg["grad_accum"]).backward()
+                    scaler.scale(loss_fn(adv_logits.float(), yy, bidx) / cfg["grad_accum"]).backward()
                     emb.data[rows] -= delta
             if (step + 1) % cfg["grad_accum"] == 0:
                 scaler.unscale_(opt)
@@ -327,6 +340,7 @@ def main(model: str = "wolf", lr: float = 2e-5, epochs: int = 3, batch_size: int
          precision: str = "bf16", class_weight_power: float = 0.5, label_smoothing: float = 0.0,
          head_ratio: float = 0.7, lang_prefix: bool = False, grad_ckpt: bool = False, seed: int = 42,
          llrd: float = 1.0, ema: float = 0.0, fgm: float = 0.0, pseudo: str = "", pseudo_thr: float = 0.98,
+         hard_weight: float = 1.0,
          run: str = "", upload_zip: str = "", aggregate_only: bool = False):
     if upload_zip:
         upload_data(upload_zip)
@@ -342,7 +356,7 @@ def main(model: str = "wolf", lr: float = 2e-5, epochs: int = 3, batch_size: int
                n_folds=n_folds, split_seed=42, precision=precision, class_weight_power=class_weight_power,
                label_smoothing=label_smoothing, head_ratio=head_ratio, lang_prefix=lang_prefix,
                grad_ckpt=grad_ckpt, warmup_ratio=0.1, seed=seed, run=run, gpu=gpu,
-               llrd=llrd, ema=ema, fgm=fgm, pseudo=pseudo, pseudo_thr=pseudo_thr)
+               llrd=llrd, ema=ema, fgm=fgm, pseudo=pseudo, pseudo_thr=pseudo_thr, hard_weight=hard_weight)
     print("run:", run, json.dumps(cfg))
     if not aggregate_only:
         print("model dir:", download_model.remote(model))
