@@ -147,47 +147,88 @@ def train_fold(cfg: dict, fold: int) -> dict:
     amp_dtype = torch.bfloat16 if cfg["precision"] == "bf16" else torch.float16
     use_scaler = cfg["precision"] == "fp16"
 
+    ema = None
+
     @torch.no_grad()
     def predict(seqs):
-        model.eval()
+        net = ema.module if ema is not None else model
+        net.eval()
         probs = np.zeros((len(seqs), 3), dtype=np.float32)
         for idx, x, a, _ in loader(seqs, bs=cfg["batch_size"] * 2):
             with torch.autocast("cuda", dtype=amp_dtype):
-                logits = model(input_ids=x.to(dev), attention_mask=a.to(dev)).logits
+                logits = net(input_ids=x.to(dev), attention_mask=a.to(dev)).logits
             probs[idx.numpy()] = torch.softmax(logits.float(), -1).cpu().numpy()
         return probs
 
     tr_seqs = [all_ids[i] for i in tr_idx]
+    tr_labels = y[tr_idx]
     va_seqs = [all_ids[i] for i in va_idx]
-    freq = np.bincount(y[tr_idx], minlength=3) / len(tr_idx)
+    n_pseudo = 0
+    if cfg.get("pseudo"):  # confident test predictions of an earlier ensemble as extra hard labels (train side only)
+        pp = np.load(f"{VOL}/pseudo/{cfg['pseudo']}.npy")
+        keep = np.where(pp.max(1) >= cfg["pseudo_thr"])[0]
+        tr_seqs = tr_seqs + [te_ids[i] for i in keep]
+        tr_labels = np.concatenate([tr_labels, pp[keep].argmax(1)])
+        n_pseudo = len(keep)
+    freq = np.bincount(tr_labels, minlength=3) / len(tr_labels)
     cw = (1.0 / freq) ** cfg["class_weight_power"]
     cw = cw / cw.mean()
     loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(cw, dtype=torch.float, device=dev),
                                         label_smoothing=cfg.get("label_smoothing", 0.0))
-    train_loader = loader(tr_seqs, y[tr_idx], shuffle=True)
+    train_loader = loader(tr_seqs, tr_labels, shuffle=True)
     steps = math.ceil(len(train_loader) / cfg["grad_accum"]) * cfg["epochs"]
+
+    # Layer-wise LR decay (llrd=1.0 -> plain AdamW): lr_layer = lr * llrd^(depth from the top)
+    import re
     no_decay = ("bias", "LayerNorm.weight", "layer_norm", "norm.weight")
-    groups = [
-        {"params": [p for n, p in model.named_parameters() if not any(s in n for s in no_decay)], "weight_decay": 0.01},
-        {"params": [p for n, p in model.named_parameters() if any(s in n for s in no_decay)], "weight_decay": 0.0},
-    ]
+    n_layers = getattr(mcfg, "num_hidden_layers", 12)
+
+    def depth_scale(name):
+        m = re.search(r"\.layers?\.(\d+)\.", name)
+        if m:
+            return cfg["llrd"] ** (n_layers - int(m.group(1)))
+        if "embed" in name:
+            return cfg["llrd"] ** (n_layers + 1)
+        return 1.0  # pooler / head / final norm
+
+    groups = [{"params": [p], "lr": cfg["lr"] * depth_scale(n),
+               "weight_decay": 0.0 if any(s in n for s in no_decay) else 0.01}
+              for n, p in model.named_parameters()]
     opt = torch.optim.AdamW(groups, lr=cfg["lr"])
     sched = get_linear_schedule_with_warmup(opt, int(cfg["warmup_ratio"] * steps), steps)
     scaler = torch.amp.GradScaler("cuda", enabled=use_scaler)
+    if cfg.get("ema"):
+        from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
+        ema = AveragedModel(model, multi_avg_fn=get_ema_multi_avg_fn(cfg["ema"]), use_buffers=True)
+    emb = model.get_input_embeddings().weight
 
     history, best = [], {"f1": -1.0}
     for ep in range(cfg["epochs"]):
         model.train()
         t0, run_loss = time.time(), 0.0
         for step, (_, x, a, yy) in enumerate(train_loader):
+            x, a, yy = x.to(dev), a.to(dev), yy.to(dev)
             with torch.autocast("cuda", dtype=amp_dtype):
-                logits = model(input_ids=x.to(dev), attention_mask=a.to(dev)).logits
-            loss = loss_fn(logits.float(), yy.to(dev)) / cfg["grad_accum"]
+                logits = model(input_ids=x, attention_mask=a).logits
+            loss = loss_fn(logits.float(), yy) / cfg["grad_accum"]
             scaler.scale(loss).backward()
+            if cfg.get("fgm") and emb.grad is not None:  # FGM: perturb only the embedding rows used in this batch
+                rows = torch.unique(x)
+                g = emb.grad[rows]
+                norm = g.norm()
+                if torch.isfinite(norm) and norm > 0:
+                    delta = cfg["fgm"] * g / norm
+                    emb.data[rows] += delta
+                    with torch.autocast("cuda", dtype=amp_dtype):
+                        adv_logits = model(input_ids=x, attention_mask=a).logits
+                    scaler.scale(loss_fn(adv_logits.float(), yy) / cfg["grad_accum"]).backward()
+                    emb.data[rows] -= delta
             if (step + 1) % cfg["grad_accum"] == 0:
                 scaler.unscale_(opt)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 scaler.step(opt); scaler.update(); opt.zero_grad(set_to_none=True); sched.step()
+                if ema is not None:
+                    ema.update_parameters(model)
             run_loss += loss.item()
         rec = {"epoch": ep, "loss": run_loss / len(train_loader), "train_s": round(time.time() - t0)}
         if len(va_idx):
@@ -204,7 +245,7 @@ def train_fold(cfg: dict, fold: int) -> dict:
     os.makedirs(out_dir, exist_ok=True)
     np.savez(f"{out_dir}/fold{fold}.npz", val_idx=va_idx, val_probs=best["val_probs"], test_probs=best["test_probs"])
     meta = {"fold": fold, "best_epoch": best["epoch"], "best_val_macro_f1": best["f1"], "history": history,
-            "max_len_used": max_len, "transformers": transformers.__version__, "torch": torch.__version__,
+            "max_len_used": max_len, "n_pseudo": n_pseudo, "transformers": transformers.__version__, "torch": torch.__version__,
             "gpu": torch.cuda.get_device_name(0), "minutes": round((time.time() - t_start) / 60, 1)}
     Path(f"{out_dir}/fold{fold}.json").write_text(json.dumps(meta, indent=1))
     volume.commit()
@@ -285,17 +326,23 @@ def main(model: str = "wolf", lr: float = 2e-5, epochs: int = 3, batch_size: int
          grad_accum: int = 1, folds: str = "0,1,2,3,4", n_folds: int = 5, gpu: str = "A10G",
          precision: str = "bf16", class_weight_power: float = 0.5, label_smoothing: float = 0.0,
          head_ratio: float = 0.7, lang_prefix: bool = False, grad_ckpt: bool = False, seed: int = 42,
+         llrd: float = 1.0, ema: float = 0.0, fgm: float = 0.0, pseudo: str = "", pseudo_thr: float = 0.98,
          run: str = "", upload_zip: str = "", aggregate_only: bool = False):
     if upload_zip:
         upload_data(upload_zip)
         return
+    if pseudo:  # upload the local test probabilities of an earlier run/blend as the pseudo-label source
+        src = Path(__file__).resolve().parents[1] / "outputs" / "runs" / pseudo / "test_probs.npy"
+        with volume.batch_upload(force=True) as batch:
+            batch.put_file(str(src), f"/pseudo/{pseudo}.npy")
     assert model in MODELS, f"model must be one of {list(MODELS)}"
     fold_list = [int(f) for f in folds.split(",")]
     run = run or f"{model}_lr{lr:g}_ep{epochs}_len{max_len}_{time.strftime('%H%M')}"
     cfg = dict(model=model, lr=lr, epochs=epochs, batch_size=batch_size, max_len=max_len, grad_accum=grad_accum,
                n_folds=n_folds, split_seed=42, precision=precision, class_weight_power=class_weight_power,
                label_smoothing=label_smoothing, head_ratio=head_ratio, lang_prefix=lang_prefix,
-               grad_ckpt=grad_ckpt, warmup_ratio=0.1, seed=seed, run=run, gpu=gpu)
+               grad_ckpt=grad_ckpt, warmup_ratio=0.1, seed=seed, run=run, gpu=gpu,
+               llrd=llrd, ema=ema, fgm=fgm, pseudo=pseudo, pseudo_thr=pseudo_thr)
     print("run:", run, json.dumps(cfg))
     if not aggregate_only:
         print("model dir:", download_model.remote(model))
