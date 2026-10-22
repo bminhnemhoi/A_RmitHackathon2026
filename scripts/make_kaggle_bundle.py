@@ -49,6 +49,9 @@ def main() -> int:
         oof = summ.get("oof_raw", summ.get("oof", {})).get("macro_f1")
         manifest.append({"run": r, "backbone": model_of(r), "oof_macro_f1": oof, "cfg": summ.get("cfg")})
     (ds / "manifest.json").write_text(json.dumps(manifest, indent=1))
+    # ship the exact training code so reviewers can audit how every probability file was produced
+    for code in ("modal_jobs/train_modal.py", "src/c1/metrics.py", "src/c1/ensemble.py"):
+        shutil.copy(REPO / code, ds / Path(code).name)
     (ds / "dataset-metadata.json").write_text(json.dumps(
         {"title": slug, "id": f"{args.kaggle_user}/{slug}", "licenses": [{"name": "CC-BY-NC-SA-4.0"}]}, indent=1))
 
@@ -57,12 +60,26 @@ def main() -> int:
 # # RMIT_SGS_Fprinciples_C1 — ensemble submission ({args.blend})
 # **Models used (all from the approved list):** {", ".join(f"`{b}`" for b in backbones)}
 #
-# Each backbone was fine-tuned on `train.csv` with the same stratified 5-fold split (label x language, seed 42);
-# test probabilities are the mean over the 5 fold models. This notebook blends the saved fold-mean test
-# probabilities with **equal weights** (chosen on out-of-fold validation, not on the leaderboard) and writes
-# `submission.csv`. Training code: `modal_jobs/train_modal.py`, `modal_jobs/train_lora.py` in the team repository.
+# **Data:** only the competition's `train.csv` (no external data, no pseudo-labels, no manual labels).
+# Each backbone was fully fine-tuned on `train.csv` with the same stratified 5-fold split (label x language, seed 42)
+# on cloud GPUs; test probabilities are the mean over the 5 fold models. This notebook blends the saved fold-mean
+# test probabilities with **equal weights** (chosen on out-of-fold validation, not on the leaderboard) and writes
+# `submission.csv`. The exact training script is attached in the input dataset (`train_modal.py`) and printed below.
 #
 # Runs: {", ".join(m["run"] for m in manifest)}
+
+# %%
+# Run configurations and out-of-fold (5-fold CV) macro-F1 of every ensemble member
+import glob, json, os
+bundle = os.path.dirname(glob.glob("/kaggle/input/**/manifest.json", recursive=True)[0])
+for m in json.load(open(f"{{bundle}}/manifest.json")):
+    c = m["cfg"] or {{}}
+    print(f"{{m['run']:<26}} {{m['backbone']:<46}} OOF={{m['oof_macro_f1']:.4f}} lr={{c.get('lr')}} epochs={{c.get('epochs')}} "
+          f"max_len={{c.get('max_len')}} batch={{c.get('batch_size')}} seed={{c.get('seed')}}")
+
+# %%
+# Training code used for every run (fine-tuning loop, folds, tokenisation, outputs)
+print(open(f"{{bundle}}/train_modal.py", encoding="utf-8").read())
 
 # %%
 import glob, json, os
