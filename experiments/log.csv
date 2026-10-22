@@ -1,2 +1,13 @@
 run_id,created_at,owner,kaggle_notebook_version,model,max_len,lr,epochs,batch_size,loss,seed,split_id,val_macro_f1,f1_benign,f1_jailbreak,f1_prompt_injection,f1_pt,f1_fr,f1_it,f1_en,public_lb,runtime_min,notes
 mmbert_small_s1,2026-10-22T12:16,claude,modal-A10G,mmbert-small,384,5e-5,2,32,ce_cw0.5,42,skf5_label_lang_s42,0.9583,0.9692,0.9448,0.9610,0.9421,0.9757,0.9713,0.9598,,15,5-fold OOF; class multipliers +0.0005 only; best epoch=last
+xlmrl_lr1e-5_ep3,2026-10-22T12:24,claude,modal-L40S,xlm-roberta-large,320,1e-5,3,16,ce_cw0.5,42,skf5_label_lang_s42,0.9563,0.9726,0.9558,0.9406,0.9483,0.9687,0.9660,0.9402,,7,5-fold OOF; best epoch=last (still improving)
+blend_mms_xlmrl,2026-10-22T12:24,claude,local,mmbert-small+xlmr-large (0.5/0.5),,,,,,42,skf5_label_lang_s42,0.9666,0.9773,0.9623,0.9601,0.9579,0.9757,0.9746,0.9657,,0,class multipliers [1,1,1.4] -> 0.9689 (tuned on same OOF; optimistic)
+wolf_lr2e-5_ep3,2026-10-22T12:27,claude,modal-A10G,wolf-defender-prompt-injection,384,2e-5,3,32,ce_cw0.5,42,skf5_label_lang_s42,0.9664,0.9776,0.9618,0.9599,0.9557,0.9794,0.9765,0.9624,,10,best single; best epoch=last
+blend3,2026-10-22T12:27,claude,local,mms 0.40 + xlmrl 0.15 + wolf 0.45,,,,,,42,skf5_label_lang_s42,0.9725,0.9807,0.9676,0.9693,0.9629,0.9808,0.9825,0.9752,,0,blend weights fitted on OOF (mildly optimistic)
+xlmrl_lr1e-5_ep5,2026-10-22T12:37,claude,modal-L40S,xlm-roberta-large,320,1e-5,5,16,ce_cw0.5,42,skf5_label_lang_s42,0.9629,0.9767,0.9611,0.9509,0.9557,0.9748,0.9731,0.9445,,12,+0.0066 vs 3 epochs
+blend3b,2026-10-22T12:37,claude,local,mms 0.4 + xlmrl_ep5 0.2 + wolf 0.4,,,,,,42,skf5_label_lang_s42,0.9732,,,,0.9633,,,,,0,no class multipliers (nested CV showed no gain)
+wolf_lr2e-5_ep4,2026-10-22T12:40,claude,modal-A10G,wolf-defender-prompt-injection,384,2e-5,4,32,ce_cw0.5,42,skf5_label_lang_s42,0.9671,0.9775,0.9616,0.9621,0.9583,0.9796,0.9762,0.9579,,12,best epoch=last
+blend4b,2026-10-22T12:40,claude,local,mms .30 + xlmrl_ep5 .25 + wolf_ep3 .20 + wolf_ep4 .25,,,,,,42,skf5_label_lang_s42,0.9749,,,,,,,,,0,no class multipliers
+mmbert_base_lr3e-5_ep3,2026-10-22T12:48,claude,modal-A10G,mmbert-base,384,3e-5,3,32,ce_cw0.5,42,skf5_label_lang_s42,0.9673,0.9773,0.9604,0.9640,0.9556,0.9786,0.9801,0.9654,,18,best single so far
+blend5_equal,2026-10-22T12:48,claude,local,equal mean of mms+xlmrl_ep5+wolf_ep3+wolf_ep4+mmbert_base,,,,,,42,skf5_label_lang_s42,0.9751,,,,,,,,,0,equal weights beat nested fitted weights (0.9743) -> use equal
+wolf_len768_s43_ep4,2026-10-22T12:48,claude,modal-L40S,wolf-defender-prompt-injection,768,2e-5,4,16,ce_cw0.5,43,skf5_label_lang_s42,0.9670,0.9775,0.9621,0.9614,0.9590,0.9767,0.9766,0.9594,,10,longer context: no gain vs len384; adding to blend5 -> 0.9748 (worse) -> not used
